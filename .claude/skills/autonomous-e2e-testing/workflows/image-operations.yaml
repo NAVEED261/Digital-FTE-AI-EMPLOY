@@ -1,0 +1,413 @@
+# Image Operations Workflow Scenarios
+#
+# Test scenarios for autonomous image search, download, and upload operations.
+# Used by test-orchestrator.py with --workflow image-operations flag.
+
+workflow:
+  name: Image Operations
+  description: Autonomous web image search, download, and upload workflows
+  version: 1.0.0
+
+config:
+  default_search_source: unsplash  # unsplash, google-images
+  default_image_count: 20
+  min_image_width: 800
+  min_image_height: 600
+  download_dir: ./temp_downloads
+  upload_timeout: 30
+
+# Image Search Test Scenarios
+image_search_tests:
+  - name: Search Unsplash API
+    priority: critical
+    tags: [search, unsplash, api]
+    description: Test Unsplash API image search functionality
+    steps:
+      - action: search_unsplash
+        query: "ladies fashion boutique"
+        filters:
+          count: 10
+          min_width: 800
+          min_height: 600
+          order_by: relevant
+        assert:
+          result_count: ">= 5"
+          all_images_have_urls: true
+          all_images_have_dimensions: true
+
+  - name: Search Google Images (Fallback)
+    priority: high
+    tags: [search, google-images, fallback]
+    description: Test Google Images browser automation search
+    steps:
+      - action: search_google_images
+        query: "pakistani fashion shalwar qameez"
+        filters:
+          min_width: 800
+          min_height: 600
+        assert:
+          result_count: ">= 5"
+          all_images_valid: true
+
+  - name: Filter Images by Content
+    priority: medium
+    tags: [search, filtering]
+    description: Test content-based image filtering
+    steps:
+      - action: search_unsplash
+        query: "fashion clothing"
+        filters:
+          count: 20
+      - action: filter_by_content
+        keywords: ["dress", "fashion", "boutique"]
+        assert:
+          filtered_count: ">= 5"
+
+  - name: Filter Images by Quality
+    priority: medium
+    tags: [search, filtering, quality]
+    description: Test quality-based image filtering
+    steps:
+      - action: search_unsplash
+        query: "ladies fashion"
+        filters:
+          count: 20
+      - action: filter_by_quality
+        min_width: 1200
+        min_height: 800
+        assert:
+          all_meet_quality: true
+
+# Image Download Test Scenarios
+image_download_tests:
+  - name: Download Single Image
+    priority: critical
+    tags: [download, single]
+    description: Test single image download
+    steps:
+      - action: search_unsplash
+        query: "fashion"
+        filters:
+          count: 1
+      - action: download_images
+        save_dir: ./test_downloads/single
+        assert:
+          downloaded_count: 1
+          file_exists: true
+          file_size: "> 1024"
+
+  - name: Batch Download Images
+    priority: critical
+    tags: [download, batch]
+    description: Test batch image download (20 images)
+    steps:
+      - action: search_unsplash
+        query: "boutique fashion"
+        filters:
+          count: 20
+      - action: download_images
+        save_dir: ./test_downloads/batch
+        max_retries: 3
+        assert:
+          downloaded_count: ">= 15"  # Allow some failures
+          all_files_valid: true
+
+  - name: Download Error Handling
+    priority: high
+    tags: [download, error-handling]
+    description: Test download error recovery
+    steps:
+      - action: download_images
+        urls: ["https://invalid-url.com/image.jpg"]
+        save_dir: ./test_downloads/errors
+        max_retries: 2
+        assert:
+          handled_gracefully: true
+          no_crashes: true
+
+  - name: Validate Downloaded Images
+    priority: medium
+    tags: [download, validation]
+    description: Test image file validation
+    steps:
+      - action: search_unsplash
+        query: "fashion"
+        filters:
+          count: 5
+      - action: download_images
+        save_dir: ./test_downloads/validation
+      - action: validate_images
+        assert:
+          all_valid: true
+          all_readable: true
+          all_correct_format: true
+
+# Image Upload Test Scenarios
+image_upload_tests:
+  - name: Single Image Upload
+    priority: critical
+    tags: [upload, single]
+    description: Upload single image with metadata
+    steps:
+      - action: navigate
+        url: "{{base_url}}/admin/products/new"
+      - action: upload_file
+        filepath: "./test_images/sample.jpg"
+        metadata:
+          category: "Fashion"
+          description: "Test product image"
+        assert:
+          upload_success: true
+          metadata_saved: true
+
+  - name: Batch Image Upload
+    priority: critical
+    tags: [upload, batch]
+    description: Upload multiple images with progress tracking
+    steps:
+      - action: navigate
+        url: "{{base_url}}/admin/products/new"
+      - action: batch_upload
+        file_paths:
+          - "./test_images/image_001.jpg"
+          - "./test_images/image_002.jpg"
+          - "./test_images/image_003.jpg"
+        batch_size: 5
+        assert:
+          all_uploaded: true
+          progress_tracked: true
+
+  - name: Upload with Auto-Categorization
+    priority: high
+    tags: [upload, auto-categorize]
+    description: Test automatic category assignment
+    steps:
+      - action: upload_with_auto_categorize
+        file_paths: ["./test_images/dress.jpg"]
+        assert:
+          category_detected: true
+          category_applied: true
+
+  - name: Upload Verification
+    priority: high
+    tags: [upload, verification]
+    description: Verify uploads appear in gallery
+    steps:
+      - action: upload_file
+        filepath: "./test_images/sample.jpg"
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: verify_upload
+        expected_count: 1
+        assert:
+          image_visible: true
+          image_loads: true
+
+# Complete End-to-End Workflow Scenarios
+e2e_workflow_tests:
+  - name: Complete Image Workflow (Fatima Zehra Boutique)
+    priority: critical
+    tags: [e2e, workflow, boutique]
+    description: Complete search → download → upload workflow for boutique
+    workflow_config:
+      search_query: "pakistani ladies fashion shalwar qameez boutique"
+      image_count: 20
+      upload_url: "{{base_url}}/admin/products/new"
+      metadata:
+        category: "Ladies Fashion"
+        tags: ["boutique", "fashion", "shalwar qameez"]
+        description: "Elegant fashion collection"
+    steps:
+      - phase: search
+        action: search_unsplash
+        query: "{{workflow_config.search_query}}"
+        filters:
+          count: "{{workflow_config.image_count}}"
+          min_width: 800
+          min_height: 600
+          order_by: relevant
+        assert:
+          found: ">= 15"
+
+      - phase: download
+        action: download_images
+        save_dir: ./temp_downloads/boutique
+        max_retries: 3
+        assert:
+          downloaded: ">= 15"
+          all_valid: true
+
+      - phase: upload
+        action: batch_upload
+        upload_url: "{{workflow_config.upload_url}}"
+        metadata: "{{workflow_config.metadata}}"
+        assert:
+          uploaded: ">= 15"
+          success_rate: ">= 90%"
+
+      - phase: verify
+        action: verify_uploads
+        gallery_url: "{{base_url}}/products"
+        expected_count: 20
+        assert:
+          verified: true
+          images_visible: true
+
+  - name: Quick Image Search and Upload (5 images)
+    priority: high
+    tags: [e2e, quick]
+    description: Fast workflow for testing (5 images)
+    steps:
+      - action: search_download_upload
+        query: "fashion boutique"
+        image_count: 5
+        upload_url: "{{base_url}}/admin/products/new"
+        metadata:
+          category: "Fashion"
+        assert:
+          completed: true
+          success_rate: ">= 80%"
+
+  - name: Large Batch Upload (40 images)
+    priority: medium
+    tags: [e2e, large-batch]
+    description: Test large batch processing
+    steps:
+      - action: search_download_upload
+        query: "ladies fashion clothing"
+        image_count: 40
+        upload_url: "{{base_url}}/admin/products/new"
+        metadata:
+          category: "Fashion Collection"
+          tags: ["boutique", "ladies", "fashion"]
+        assert:
+          completed: true
+          success_rate: ">= 75%"
+          duration: "< 600"  # Under 10 minutes
+
+# Error Handling and Recovery Scenarios
+error_handling_tests:
+  - name: Handle Search API Failure
+    priority: high
+    tags: [error-handling, search]
+    description: Test graceful fallback when API fails
+    steps:
+      - action: search_with_fallback
+        primary: unsplash
+        fallback: google-images
+        query: "fashion"
+        assert:
+          completed: true
+          used_fallback: true
+
+  - name: Handle Partial Download Failure
+    priority: high
+    tags: [error-handling, download]
+    description: Continue workflow despite some download failures
+    steps:
+      - action: download_images
+        urls:
+          - "https://valid-url.com/image1.jpg"
+          - "https://invalid-url.com/image2.jpg"
+          - "https://valid-url.com/image3.jpg"
+        continue_on_error: true
+        assert:
+          some_succeeded: true
+          errors_logged: true
+
+  - name: Handle Upload Failure with Retry
+    priority: high
+    tags: [error-handling, upload]
+    description: Retry failed uploads
+    steps:
+      - action: upload_with_retry
+        file_paths: ["./test_images/sample.jpg"]
+        max_retries: 3
+        retry_delay: 2
+        assert:
+          retry_attempted: true
+          eventually_succeeded: true
+
+  - name: Cleanup After Failed Workflow
+    priority: medium
+    tags: [error-handling, cleanup]
+    description: Ensure cleanup happens even on failure
+    steps:
+      - action: run_workflow_with_cleanup
+        query: "fashion"
+        image_count: 5
+        force_failure: true
+        assert:
+          cleanup_executed: true
+          no_temp_files_remaining: true
+
+# Performance Test Scenarios
+performance_tests:
+  - name: Measure Search Performance
+    priority: low
+    tags: [performance, search]
+    description: Benchmark search speed
+    steps:
+      - action: benchmark_search
+        query: "fashion"
+        iterations: 5
+        assert:
+          avg_duration: "< 3"  # Under 3 seconds
+
+  - name: Measure Download Speed
+    priority: low
+    tags: [performance, download]
+    description: Benchmark download throughput
+    steps:
+      - action: benchmark_download
+        image_count: 10
+        assert:
+          avg_download_time: "< 2"  # Under 2s per image
+          total_duration: "< 30"     # Under 30s total
+
+  - name: Measure End-to-End Workflow Performance
+    priority: low
+    tags: [performance, e2e]
+    description: Benchmark complete workflow
+    steps:
+      - action: benchmark_workflow
+        image_count: 20
+        assert:
+          total_duration: "< 300"  # Under 5 minutes
+          throughput: "> 0.1"      # > 0.1 images/second
+
+# Verification Checklist
+verification:
+  pre_test:
+    - Check UNSPLASH_ACCESS_KEY is set
+    - Verify download directory is writable
+    - Confirm upload URL is accessible
+    - Ensure MCP server is running
+
+  post_test:
+    - Verify all temp files cleaned up
+    - Check uploaded images in gallery
+    - Validate metadata was saved
+    - Review error logs
+
+# Expected Results Summary
+expected_results:
+  search:
+    unsplash_success_rate: ">= 95%"
+    google_fallback_works: true
+    filtering_accurate: true
+
+  download:
+    success_rate: ">= 85%"  # Allow some failures
+    error_handling: true
+    file_validation: true
+
+  upload:
+    success_rate: ">= 90%"
+    metadata_preserved: true
+    verification_works: true
+
+  e2e_workflow:
+    completion_rate: ">= 80%"
+    zero_manual_intervention: true
+    performance_acceptable: true

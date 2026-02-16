@@ -1,0 +1,550 @@
+# Issue Detection & Fix Patterns Library
+# Used by issue-detector.py to identify and suggest fixes for common issues
+
+patterns:
+  # ============================================================================
+  # CONSOLE ERRORS (Critical - Requires Manual Fix)
+  # ============================================================================
+
+  - id: CE001
+    name: JavaScript Runtime Error - Undefined Property
+    category: console-error
+    severity: critical
+    detection:
+      method: console_message
+      level: error
+      pattern: "Cannot read propert|Cannot read prop"
+    auto_fix: false
+    description: |
+      JavaScript attempted to read a property on an undefined or null object.
+      This will crash the feature and prevent user interaction.
+    fix_template: |
+      Error detected in {{file}}:{{line}}
+
+      Problem:
+        {{error_message}}
+
+      Common causes:
+      1. Missing null check before property access
+      2. Async data not loaded yet
+      3. API response format changed
+      4. Missing dependency injection
+
+      Solution template:
+      ```javascript
+      // Before (crashes)
+      const value = data.properties.nested.value;
+
+      // After (safe)
+      const value = data?.properties?.nested?.value;
+      // OR
+      if (data && data.properties && data.properties.nested) {
+        const value = data.properties.nested.value;
+      }
+      ```
+    severity_reason: "Blocks user interaction, breaks feature"
+
+  - id: CE002
+    name: Unhandled Promise Rejection
+    category: console-error
+    severity: critical
+    detection:
+      method: console_message
+      level: error
+      pattern: "Unhandled promise rejection|Promise rejection"
+    auto_fix: false
+    description: |
+      An async operation failed and wasn't properly handled with .catch() or try/catch.
+    fix_template: |
+      Unhandled promise rejection in {{file}}:{{line}}
+
+      Problem:
+        {{error_message}}
+
+      Solution template:
+      ```javascript
+      // Before
+      fetchData().then(data => processData(data));
+
+      // After
+      fetchData()
+        .then(data => processData(data))
+        .catch(err => {
+          console.error("Failed to fetch data:", err);
+          // Handle error gracefully
+        });
+      ```
+
+  - id: CE003
+    name: Reference Error - Variable Not Defined
+    category: console-error
+    severity: high
+    detection:
+      method: console_message
+      level: error
+      pattern: "is not defined|ReferenceError"
+    auto_fix: false
+    description: |
+      Variable or function is used before it's defined or in wrong scope.
+    fix_template: |
+      ReferenceError in {{file}}:{{line}}
+
+      Check:
+      1. Variable spelled correctly
+      2. Variable is defined in correct scope
+      3. Import statement exists if from another file
+      4. No typos in variable name
+
+  # ============================================================================
+  # NETWORK ERRORS (High - Requires Backend Fix)
+  # ============================================================================
+
+  - id: NE001
+    name: API Endpoint Not Found
+    category: network-failure
+    severity: high
+    detection:
+      method: network_request
+      status_code: 404
+    auto_fix: false
+    description: |
+      The API endpoint being called doesn't exist (404 Not Found).
+      This indicates the backend API changed or isn't deployed.
+    fix_template: |
+      Request to {{url}} returned 404
+
+      Check:
+      1. Backend API is running: {{backend_url}}/docs
+      2. Endpoint path is correct: {{path}}
+      3. Backend has this endpoint implemented
+      4. No typos in endpoint URL
+
+      Common causes:
+      - Backend not started
+      - Endpoint not implemented
+      - Wrong URL path
+      - CORS misconfiguration
+
+  - id: NE002
+    name: Network Request Timeout
+    category: network-failure
+    severity: high
+    detection:
+      method: network_request
+      status_code: 0
+      error_pattern: "timeout|ERR_CONNECTION_"
+    auto_fix: false
+    description: |
+      Network request timed out - backend service not responding.
+    fix_template: |
+      Request {{method}} {{url}} timed out after {{timeout}}ms
+
+      Check:
+      1. Backend service is running
+      2. Network connection is stable
+      3. Server not overloaded
+      4. Firewall not blocking request
+
+  - id: NE003
+    name: CORS Error
+    category: network-failure
+    severity: high
+    detection:
+      method: console_message
+      pattern: "CORS|Cross-Origin|Access-Control"
+    auto_fix: false
+    description: |
+      Frontend trying to access API from different domain without proper CORS headers.
+    fix_template: |
+      CORS error accessing {{url}}
+
+      Backend needs to allow requests from:
+      {{frontend_origin}}
+
+      In FastAPI, add:
+      ```python
+      from fastapi.middleware.cors import CORSMiddleware
+
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["http://localhost:3000", "http://localhost:3001"],
+          allow_methods=["*"],
+          allow_headers=["*"],
+      )
+      ```
+
+  # ============================================================================
+  # BROKEN IMAGES (Medium - May Be Auto-Fixed)
+  # ============================================================================
+
+  - id: BI001
+    name: Image Failed to Load
+    category: broken-image
+    severity: medium
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const images = Array.from(document.images);
+          return images.filter(img =>
+            img.complete && img.naturalWidth === 0
+          );
+        }
+    auto_fix: false
+    description: |
+      Image tag exists but image file didn't load (broken link or file missing).
+    fix_template: |
+      Image failed to load: {{src}}
+
+      Check:
+      1. File exists: ls {{local_path}}
+      2. Path is correct relative to public folder
+      3. Use /public/images/... path
+      4. Verify file extension (.jpg, .png, etc)
+
+      If using CDN:
+      - Verify CDN URL is correct
+      - Check CDN credentials
+      - Verify file uploaded to CDN
+
+  - id: BI002
+    name: Missing Image Alt Text
+    category: missing-alt-text
+    severity: low
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          return Array.from(document.images).filter(img => !img.alt);
+        }
+    auto_fix: true
+    auto_fix_confidence: 0.85
+    description: |
+      Image missing alt text (accessibility issue for screen readers).
+    fix_template: |
+      Missing alt text on: {{src}}
+
+      Add meaningful alt text:
+      ```html
+      <!-- Before -->
+      <img src="/products/chair.jpg" />
+
+      <!-- After -->
+      <img src="/products/chair.jpg" alt="Red office chair with armrests" />
+      ```
+    suggested_alt_strategy: |
+      Use descriptive alt text that would help someone who can't see the image understand what it is.
+      Include relevant details like:
+      - What the item is
+      - Key characteristics (color, size, style)
+      - Context if relevant
+
+  # ============================================================================
+  # LAYOUT PROBLEMS (Medium - Requires Investigation)
+  # ============================================================================
+
+  - id: LP001
+    name: Element Overlap Detected
+    category: layout-problem
+    severity: medium
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          // Check for overlapping elements
+          const elements = document.querySelectorAll('[class*="absolute"], [class*="fixed"], [style*="position"]');
+          const overlaps = [];
+
+          for (let i = 0; i < elements.length; i++) {
+            const rect1 = elements[i].getBoundingClientRect();
+            for (let j = i + 1; j < elements.length; j++) {
+              const rect2 = elements[j].getBoundingClientRect();
+              if (!(rect1.right < rect2.left || rect1.left > rect2.right ||
+                    rect1.bottom < rect2.top || rect1.top > rect2.bottom)) {
+                overlaps.push({
+                  element1: elements[i].className,
+                  element2: elements[j].className
+                });
+              }
+            }
+          }
+          return overlaps;
+        }
+    auto_fix: false
+    description: |
+      Elements are overlapping on the page, making content unreadable.
+    fix_template: |
+      Layout issue detected: {{description}}
+
+      Overlapping elements:
+      {{element1}} overlaps with {{element2}}
+
+      Solutions:
+      1. Adjust z-index values
+      2. Change positioning (relative vs absolute)
+      3. Add margins/padding
+      4. Check responsive design for mobile
+      5. Review Tailwind classes for conflicts
+
+  - id: LP002
+    name: Hidden Content on Mobile
+    category: layout-problem
+    severity: medium
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const elements = document.querySelectorAll('[style*="overflow: hidden"], [style*="width: 0"], [style*="height: 0"]');
+          return Array.from(elements).map(el => ({
+            element: el.tagName,
+            class: el.className
+          }));
+        }
+    auto_fix: false
+    description: |
+      Content is hidden due to overflow or zero dimensions.
+
+  # ============================================================================
+  # PERFORMANCE ISSUES (High - Requires Investigation)
+  # ============================================================================
+
+  - id: PI001
+    name: Largest Contentful Paint (LCP) Slow
+    category: performance-issue
+    severity: high
+    detection:
+      method: web_vitals
+      metric: lcp
+      threshold: 2500  # milliseconds
+    auto_fix: false
+    description: |
+      Main content takes too long to load (should be < 2.5 seconds).
+    fix_template: |
+      LCP: {{current}}ms (target: < 2500ms)
+
+      Slow resources:
+      {{slow_resources}}
+
+      Solutions:
+      1. Optimize hero image (compress, use WebP)
+      2. Lazy load below-fold images
+      3. Remove render-blocking CSS/JS
+      4. Use CDN for static assets
+      5. Defer non-critical JavaScript
+
+      For image optimization:
+      ```bash
+      # Convert to WebP format
+      cwebp input.jpg -o input.webp
+
+      # Use responsive images
+      <picture>
+        <source srcset="image.webp" type="image/webp">
+        <source srcset="image.jpg" type="image/jpeg">
+        <img src="image.jpg" alt="Description">
+      </picture>
+      ```
+
+  - id: PI002
+    name: Cumulative Layout Shift (CLS) High
+    category: performance-issue
+    severity: medium
+    detection:
+      method: web_vitals
+      metric: cls
+      threshold: 0.1
+    auto_fix: false
+    description: |
+      Page layout shifts unexpectedly (ads, images loading, etc).
+    fix_template: |
+      CLS: {{current}} (target: < 0.1)
+
+      Cause:
+      {{cause}}
+
+      Solutions:
+      1. Reserve space for images (width/height attributes)
+      2. Avoid inserting content above existing content
+      3. Use transform for animations instead of position changes
+      4. Avoid unsized ads/iframes
+
+  # ============================================================================
+  # ACCESSIBILITY ISSUES (Low - Partial Auto-Fix)
+  # ============================================================================
+
+  - id: AC001
+    name: Missing Form Label
+    category: accessibility-issue
+    severity: low
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const inputs = document.querySelectorAll('input:not([type="hidden"])');
+          return Array.from(inputs).filter(input => {
+            const label = document.querySelector(`label[for="${input.id}"]`);
+            return !label && !input.getAttribute('aria-label');
+          });
+        }
+    auto_fix: true
+    auto_fix_confidence: 0.75
+    description: |
+      Form input without associated label (accessibility issue).
+    fix_template: |
+      Missing label for input id="{{id}}"
+
+      Solution:
+      ```html
+      <!-- Before -->
+      <input id="email" type="email" placeholder="Enter email" />
+
+      <!-- After -->
+      <label for="email">Email Address</label>
+      <input id="email" type="email" placeholder="Enter email" />
+      ```
+
+  - id: AC002
+    name: Low Color Contrast
+    category: accessibility-issue
+    severity: low
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          // Simplified contrast checking
+          const elements = document.querySelectorAll('p, span, a, button');
+          return Array.from(elements).filter(el => {
+            const style = window.getComputedStyle(el);
+            // This is simplified - real contrast checking is complex
+            return false; // Placeholder
+          });
+        }
+    auto_fix: false
+    description: |
+      Text color contrast is too low (fails WCAG standards).
+    fix_template: |
+      Low contrast: {{element}}
+
+      Current: {{current_contrast}}:1
+      Required: 4.5:1 (normal text), 3:1 (large text)
+
+      Solution:
+      - Darken text color
+      - Lighten background color
+      - Use darker text on light backgrounds
+
+  - id: AC003
+    name: Missing ARIA Label
+    category: accessibility-issue
+    severity: low
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const buttons = document.querySelectorAll('button:not(:has(span, p))');
+          return Array.from(buttons).filter(btn =>
+            !btn.textContent.trim() &&
+            !btn.getAttribute('aria-label')
+          );
+        }
+    auto_fix: true
+    auto_fix_confidence: 0.80
+    description: |
+      Button or icon without accessible label.
+    fix_template: |
+      Missing ARIA label on {{element}}
+
+      Solution:
+      ```html
+      <!-- Before -->
+      <button>✕</button>
+
+      <!-- After -->
+      <button aria-label="Close menu">✕</button>
+      ```
+
+  # ============================================================================
+  # CUSTOM PATTERNS FOR ECOMMERCE APPS
+  # ============================================================================
+
+  - id: EC001
+    name: Product Image Missing or Broken
+    category: broken-image
+    severity: high
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const products = document.querySelectorAll('[class*="product"]');
+          return Array.from(products).map(p => {
+            const img = p.querySelector('img');
+            return {
+              product: p.textContent.slice(0, 50),
+              image_status: img ? (img.complete && img.naturalWidth > 0 ? 'ok' : 'broken') : 'missing'
+            };
+          });
+        }
+    auto_fix: false
+    description: |
+      Product listing with missing or broken product image.
+    fix_template: |
+      Missing product image for: {{product}}
+
+      Check:
+      1. Product has image in database
+      2. Image file exists in storage
+      3. Image path is correct
+      4. CDN configured properly
+
+  - id: EC002
+    name: Add to Cart Button Missing
+    category: accessibility-issue
+    severity: high
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const products = document.querySelectorAll('[class*="product"]');
+          return Array.from(products).filter(p => !p.querySelector('button:has-text("Add")'));
+        }
+    auto_fix: false
+    description: |
+      Product card without "Add to Cart" button.
+    fix_template: |
+      Add to Cart button missing on product: {{product}}
+
+      Add button:
+      ```jsx
+      <button onClick={addToCart} className="btn btn-primary">
+        Add to Cart
+      </button>
+      ```
+
+  - id: EC003
+    name: Price Not Displayed
+    category: layout-problem
+    severity: high
+    detection:
+      method: evaluate
+      function: |
+        () => {
+          const products = document.querySelectorAll('[class*="product"]');
+          return Array.from(products).filter(p =>
+            !p.textContent.match(/Rs\s*\d+/i) &&
+            !p.textContent.match(/\$\s*\d+/)
+          );
+        }
+    auto_fix: false
+    description: |
+      Product listing without visible price.
+    fix_template: |
+      Price not displayed for: {{product}}
+
+      Add price element:
+      ```jsx
+      <div className="price text-lg font-bold">
+        Rs {product.price}
+      </div>
+      ```
+
+# End of patterns

@@ -1,0 +1,79 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+credentials.json
+token.json
+*.pem
+*.key
+secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv
+venv/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Sessions and temporary
+.sessions/
+.cache/
+*.tmp
+*.temp
+*.pid
+
+# Process Management
+ecosystem.config.js
+
+# Vault-specific (local working files)
+AI_Employee_Vault/Logs/*.log
+AI_Employee_Vault/.sessions/
+AI_Employee_Vault/Inbox/*
+!AI_Employee_Vault/Inbox/.gitkeep
+AI_Employee_Vault/Pending_Approval/*
+!AI_Employee_Vault/Pending_Approval/.gitkeep
+AI_Employee_Vault/Rejected/*
+!AI_Employee_Vault/Rejected/.gitkeep

@@ -1,0 +1,17 @@
+# docker-ai-production
+
+This is a reference to the docker-ai-production skill in the `.claude/skills/docker-ai-production/` directory.
+
+To use this skill, load from: `.claude/skills/docker-ai-production/SKILL.md`
+
+**Main SKILL file**: `.claude/skills/docker-ai-production/SKILL.md` (600 lines)
+
+**References** (3500+ lines):
+- gpu-runtime.md - NVIDIA runtime, CUDA compatibility, cloud GPUs
+- model-optimization.md - Layer caching, compression, sharding
+- inference-patterns.md - vLLM, TGI, Triton, TorchServe, Ray Serve
+- uv-integration.md - UV package manager integration
+- production-security-ai.md - Non-root GPU, secrets, SBOM
+- troubleshooting-ai.md - 25+ battle-tested gotchas
+
+**Verification**: Run `python .claude/skills/docker-ai-production/scripts/verify.py`

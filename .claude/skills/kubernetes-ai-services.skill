@@ -1,0 +1,48 @@
+# kubernetes-ai-services
+
+This is a reference to the kubernetes-ai-services skill in the `.claude/skills/kubernetes-ai-services/` directory.
+
+To use this skill, load from: `.claude/skills/kubernetes-ai-services/SKILL.md`
+
+**Main SKILL file**: `.claude/skills/kubernetes-ai-services/SKILL.md` (800 lines)
+
+**References**:
+- gpu-scheduling.md - GPU operator, node pools, cloud setup
+- Additional references (model-serving, autoscaling, storage, observability, troubleshooting) to be completed
+
+**Verification**: Run `python .claude/skills/kubernetes-ai-services/scripts/verify.py`
+
+**Deployment Example**:
+```yaml
+# Deploy LLM inference with GPU to Kubernetes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-inference
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: llm-inference
+  template:
+    metadata:
+      labels:
+        app: llm-inference
+    spec:
+      containers:
+      - name: llm-api
+        image: my-llm:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+          requests:
+            nvidia.com/gpu: 1
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          failureThreshold: 60
+          periodSeconds: 5
+```
+
+See SKILL.md for patterns: StatefulSets, custom autoscaling, persistent storage, health checks, security

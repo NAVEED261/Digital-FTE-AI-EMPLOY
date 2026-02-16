@@ -1,0 +1,69 @@
+# Exercise 04: Multi-Container Setup with docker-compose
+#
+# Goal: Learn to orchestrate multiple containers (API + Database)
+#       and how they communicate
+#
+# Instructions:
+# 1. Copy your main.py and requirements.txt to this directory
+# 2. Copy the Dockerfile from exercise 03
+# 3. Update main.py to read DATABASE_URL from environment
+# 4. Run: docker-compose up
+# 5. Test: curl http://localhost:8000/docs
+
+version: '3.8'
+
+services:
+  # FastAPI Application Service
+  api:
+    build: .                          # Build from Dockerfile in this directory
+    container_name: task-api          # Friendly container name
+    ports:
+      - "8000:8000"                   # Map port 8000
+    environment:
+      # Database connection string
+      # 'db' is the service name (Docker creates DNS entry)
+      DATABASE_URL: postgresql://taskuser:taskpass@db:5432/tasks_db
+      PYTHONUNBUFFERED: 1             # Unbuffer Python output for real-time logs
+    depends_on:
+      # Wait for database to be healthy before starting API
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app                        # Mount local code for hot-reload during development
+    networks:
+      - app-network                   # Custom network for service communication
+    restart: unless-stopped           # Restart if container crashes
+
+  # PostgreSQL Database Service
+  db:
+    image: postgres:16-alpine         # Official PostgreSQL image
+    container_name: task-db           # Friendly container name
+    environment:
+      POSTGRES_USER: taskuser         # Database user
+      POSTGRES_PASSWORD: taskpass     # Database password
+      POSTGRES_DB: tasks_db           # Database name
+    volumes:
+      # Named volume for persistent data
+      # Data survives container restart
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"                   # Map PostgreSQL port (optional, for local access)
+    healthcheck:
+      # Health check: is PostgreSQL ready?
+      test: ["CMD-SHELL", "pg_isready -U taskuser"]
+      interval: 10s                   # Check every 10 seconds
+      timeout: 5s                     # Timeout after 5 seconds
+      retries: 5                      # Consider unhealthy after 5 failures
+      start_period: 10s               # Grace period before first check
+    networks:
+      - app-network                   # Same network as API
+    restart: unless-stopped
+
+# Define named volumes for persistent storage
+volumes:
+  postgres_data:                      # Persists PostgreSQL data between restarts
+
+# Define custom networks for service communication
+networks:
+  app-network:                        # Services on this network can reach each other
+    driver: bridge

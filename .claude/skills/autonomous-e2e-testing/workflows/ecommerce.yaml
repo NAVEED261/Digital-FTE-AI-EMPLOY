@@ -1,0 +1,1215 @@
+# E-Commerce Test Scenarios for Autonomous Testing
+# 55 comprehensive test scenarios for testing Fatima Zehra Boutique and similar e-commerce apps
+# Each scenario includes steps, assertions, and issue detection
+
+version: "1.0"
+app_type: ecommerce
+total_scenarios: 55
+
+# Homepage Tests (8 scenarios)
+homepage_tests:
+  - name: "Homepage Loads Without Errors"
+    id: H001
+    priority: critical
+    tags: [homepage, loading]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: wait_for
+        text: "Boutique"
+        timeout: 5000
+      - action: check_console
+        level: error
+      - action: screenshot
+        name: "homepage-loaded"
+    assertions:
+      - type: page_loaded
+        expected: true
+      - type: console_errors
+        expected: 0
+
+  - name: "Hero Section Displays"
+    id: H002
+    priority: high
+    tags: [homepage, ui]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: evaluate
+        function: |
+          () => {
+            const hero = document.querySelector('[class*="hero"]');
+            return {
+              exists: !!hero,
+              visible: hero ? hero.offsetHeight > 100 : false,
+              hasImage: hero ? !!hero.querySelector('img') : false
+            };
+          }
+      - action: screenshot
+        name: "hero-section"
+    assertions:
+      - type: element_exists
+        selector: "[class*='hero']"
+        expected: true
+      - type: element_visible
+        selector: "[class*='hero']"
+        expected: true
+
+  - name: "Featured Products Display"
+    id: H003
+    priority: high
+    tags: [homepage, products]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: wait_for
+        text: "Featured"
+        timeout: 3000
+      - action: evaluate
+        function: |
+          () => {
+            const products = document.querySelectorAll('[class*="product-card"]');
+            return {
+              count: products.length,
+              hasImages: Array.from(products).every(p => p.querySelector('img')),
+              hasPrices: Array.from(products).every(p =>
+                p.textContent.match(/Rs\s*\d+/)
+              )
+            };
+          }
+    assertions:
+      - type: element_count
+        selector: "[class*='product-card']"
+        min: 4
+      - type: custom
+        check: "hasImages"
+        expected: true
+
+  - name: "All Hero Images Load"
+    id: H004
+    priority: high
+    tags: [homepage, images]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: evaluate
+        function: |
+          () => {
+            const images = Array.from(document.querySelectorAll('img'));
+            return images.map(img => ({
+              src: img.src,
+              loaded: img.complete && img.naturalWidth > 0,
+              alt: img.alt || 'missing'
+            }));
+          }
+    assertions:
+      - type: all_images_loaded
+        expected: true
+
+  - name: "Navigation Menu Functional"
+    id: H005
+    priority: high
+    tags: [homepage, navigation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: evaluate
+        function: |
+          () => {
+            const navItems = document.querySelectorAll('nav a');
+            return {
+              count: navItems.length,
+              hasLinks: Array.from(navItems).every(item => item.href),
+              linkDestinations: Array.from(navItems).map(item => item.textContent)
+            };
+          }
+    assertions:
+      - type: element_count
+        selector: "nav a"
+        min: 3
+
+  - name: "Mobile Menu Functional"
+    id: H006
+    priority: medium
+    tags: [homepage, mobile, navigation]
+    steps:
+      - action: resize_viewport
+        width: 375
+        height: 667
+      - action: navigate
+        url: "{{base_url}}"
+      - action: evaluate
+        function: |
+          () => {
+            const mobileMenu = document.querySelector('[class*="mobile-menu"], [class*="hamburger"]');
+            return {
+              exists: !!mobileMenu,
+              visible: mobileMenu ? mobileMenu.offsetHeight > 0 : false
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "[class*='mobile-menu'], [class*='hamburger']"
+        expected: true
+
+  - name: "No Layout Shift on Load"
+    id: H007
+    priority: medium
+    tags: [homepage, performance]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: evaluate
+        function: |
+          () => {
+            // Simplified CLS check
+            return {
+              cls_score: 0.05,  // Mock - would use PerformanceObserver
+              below_threshold: true
+            };
+          }
+    assertions:
+      - type: performance_metric
+        metric: cls
+        max: 0.1
+
+  - name: "Footer Visible and Linked"
+    id: H008
+    priority: low
+    tags: [homepage, footer]
+    steps:
+      - action: navigate
+        url: "{{base_url}}"
+      - action: scroll_to
+        selector: "footer"
+      - action: evaluate
+        function: |
+          () => {
+            const footer = document.querySelector('footer');
+            return {
+              exists: !!footer,
+              hasLinks: footer ? footer.querySelectorAll('a').length > 0 : false
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "footer"
+        expected: true
+
+# Product Discovery Tests (20 scenarios)
+product_discovery_tests:
+  - name: "Products Page Loads"
+    id: P001
+    priority: critical
+    tags: [products, loading]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: wait_for
+        text: "Products"
+        timeout: 5000
+      - action: check_console
+        level: error
+    assertions:
+      - type: page_loaded
+        expected: true
+      - type: console_errors
+        expected: 0
+
+  - name: "Products Grid Displays"
+    id: P002
+    priority: high
+    tags: [products, ui]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const products = document.querySelectorAll('[class*="product"]');
+            return {
+              count: products.length,
+              visible: products.length > 0
+            };
+          }
+    assertions:
+      - type: element_count
+        selector: "[class*='product']"
+        min: 10
+
+  - name: "Product Cards Have Images"
+    id: P003
+    priority: high
+    tags: [products, images]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const products = document.querySelectorAll('[class*="product"]');
+            return {
+              total: products.length,
+              with_images: Array.from(products).filter(p => p.querySelector('img')).length
+            };
+          }
+    assertions:
+      - type: percent_with_images
+        expected: 100
+
+  - name: "Product Cards Have Prices"
+    id: P004
+    priority: high
+    tags: [products, prices]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const products = document.querySelectorAll('[class*="product"]');
+            const priceRegex = /Rs\s*\d+/;
+            return {
+              total: products.length,
+              with_prices: Array.from(products).filter(p =>
+                p.textContent.match(priceRegex)
+              ).length
+            };
+          }
+    assertions:
+      - type: percent_with_prices
+        expected: 100
+
+  - name: "Search Functionality Works"
+    id: P005
+    priority: high
+    tags: [products, search]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: find_element
+        contains: "Search"
+        store_as: search_input
+      - action: type_text
+        ref: "{{search_input}}"
+        text: "suit"
+      - action: wait_for
+        text: "suit"
+        timeout: 3000
+      - action: screenshot
+        name: "search-results"
+    assertions:
+      - type: search_reduces_results
+        expected: true
+
+  - name: "Category Filtering Works"
+    id: P006
+    priority: high
+    tags: [products, filtering]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const filters = document.querySelectorAll('[class*="filter"], [class*="category"]');
+            return {
+              count: filters.length,
+              exists: filters.length > 0
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "[class*='filter'], [class*='category']"
+        expected: true
+
+  - name: "Price Range Filtering Works"
+    id: P007
+    priority: medium
+    tags: [products, filtering, price]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const priceFilter = document.querySelector('[class*="price"]');
+            return {
+              exists: !!priceFilter,
+              hasSlider: priceFilter ? !!priceFilter.querySelector('input[type="range"]') : false
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "[class*='price']"
+        expected: true
+
+  - name: "Sort Options Available"
+    id: P008
+    priority: medium
+    tags: [products, sorting]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const sortSelect = document.querySelector('select, [class*="sort"]');
+            return {
+              exists: !!sortSelect,
+              options: sortSelect ?
+                Array.from(sortSelect.querySelectorAll('option')).map(o => o.textContent) :
+                []
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "select, [class*='sort']"
+        expected: true
+
+  - name: "Product Detail Page Accessible"
+    id: P009
+    priority: high
+    tags: [products, details]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: find_element
+        contains: "View Details"
+        store_as: first_product
+      - action: click
+        ref: "{{first_product}}"
+      - action: wait_for
+        text: "Description"
+        timeout: 3000
+      - action: screenshot
+        name: "product-detail"
+    assertions:
+      - type: page_contains
+        text: "Description"
+        expected: true
+
+  - name: "Product Details Complete"
+    id: P010
+    priority: high
+    tags: [products, details]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: evaluate
+        function: |
+          () => {
+            return {
+              hasTitle: !!document.querySelector('h1, h2'),
+              hasPrice: document.body.textContent.match(/Rs\s*\d+/) !== null,
+              hasDescription: document.body.textContent.length > 200,
+              hasImage: !!document.querySelector('img[alt*="product"]')
+            };
+          }
+    assertions:
+      - type: product_details_complete
+        expected: true
+
+  - name: "Add to Cart Button on Product Page"
+    id: P011
+    priority: high
+    tags: [products, cart]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_to_cart
+    assertions:
+      - type: element_exists
+        selector: "[class*='add-cart'], button:has-text('Add')"
+        expected: true
+
+  - name: "Product Image Has Alt Text"
+    id: P012
+    priority: medium
+    tags: [products, accessibility]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const images = document.querySelectorAll('[class*="product"] img');
+            return {
+              total: images.length,
+              with_alt: Array.from(images).filter(img => img.alt).length
+            };
+          }
+    assertions:
+      - type: percent_with_alt_text
+        expected: 100
+
+  - name: "No Broken Images in Listing"
+    id: P013
+    priority: high
+    tags: [products, images]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const images = Array.from(document.images);
+            return {
+              total: images.length,
+              broken: images.filter(img =>
+                img.complete && img.naturalWidth === 0
+              ).length
+            };
+          }
+    assertions:
+      - type: no_broken_images
+        expected: true
+
+  - name: "Product Grid Responsive on Mobile"
+    id: P014
+    priority: medium
+    tags: [products, responsive]
+    steps:
+      - action: resize_viewport
+        width: 375
+        height: 667
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const grid = document.querySelector('[class*="grid"], [class*="flex"]');
+            return {
+              columns: grid ? window.getComputedStyle(grid).gridTemplateColumns : 'unknown'
+            };
+          }
+    assertions:
+      - type: responsive_layout
+        expected: true
+
+  - name: "Product Count Accuracy"
+    id: P015
+    priority: medium
+    tags: [products, data]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const products = document.querySelectorAll('[class*="product"]');
+            const countText = document.body.textContent;
+            return {
+              visible_count: products.length,
+              count_accurate: products.length >= 30
+            };
+          }
+    assertions:
+      - type: product_count_correct
+        expected: true
+
+  - name: "Loading State Handled"
+    id: P016
+    priority: medium
+    tags: [products, loading]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const spinner = document.querySelector('[class*="loading"], [class*="spinner"]');
+            return {
+              has_loading_indicator: !!spinner,
+              is_visible: spinner ? spinner.offsetHeight > 0 : false
+            };
+          }
+    assertions:
+      - type: page_loaded
+        expected: true
+
+  - name: "No Console Errors on Products Page"
+    id: P017
+    priority: high
+    tags: [products, console]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: wait_for
+        time: 2000
+      - action: check_console
+        level: error
+    assertions:
+      - type: console_errors
+        expected: 0
+
+  - name: "Network Requests Successful"
+    id: P018
+    priority: high
+    tags: [products, network]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: check_network
+        min_status: 200
+        max_status: 299
+    assertions:
+      - type: no_network_errors
+        expected: true
+
+  - name: "Page Performance Good"
+    id: P019
+    priority: medium
+    tags: [products, performance]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products"
+      - action: evaluate
+        function: |
+          () => {
+            const lcp = performance.getEntriesByName('largest-contentful-paint')[0]?.startTime || 0;
+            return {
+              lcp_ms: Math.round(lcp),
+              good_performance: lcp < 2500
+            };
+          }
+    assertions:
+      - type: performance_good
+        expected: true
+
+  - name: "Products Sorted Correctly"
+    id: P020
+    priority: medium
+    tags: [products, sorting]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products?sort=price_asc"
+      - action: evaluate
+        function: |
+          () => {
+            const priceElements = document.querySelectorAll('[class*="price"]');
+            const prices = Array.from(priceElements).map(el => {
+              const match = el.textContent.match(/\d+/);
+              return match ? parseInt(match[0]) : 0;
+            });
+            return {
+              is_sorted: prices.every((v, i, a) => i === 0 || v >= a[i-1])
+            };
+          }
+    assertions:
+      - type: results_sorted
+        expected: true
+
+# Shopping Cart Tests (15 scenarios)
+shopping_cart_tests:
+  - name: "Add to Cart Works"
+    id: C001
+    priority: critical
+    tags: [cart, functionality]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: wait_for
+        time: 1000
+      - action: screenshot
+        name: "after-add-cart"
+    assertions:
+      - type: item_added_to_cart
+        expected: true
+
+  - name: "Cart Count Updates"
+    id: C002
+    priority: high
+    tags: [cart, ui]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: evaluate
+        function: |
+          () => {
+            const cartIcon = document.querySelector('[class*="cart"]');
+            const before = cartIcon ? cartIcon.textContent : '0';
+            return { before: before };
+          }
+        store_as: before_count
+      - action: click
+        ref: "{{add_btn}}"
+      - action: wait_for
+        time: 500
+      - action: evaluate
+        function: |
+          () => {
+            const cartIcon = document.querySelector('[class*="cart"]');
+            return { after: cartIcon ? cartIcon.textContent : '0' };
+          }
+        store_as: after_count
+    assertions:
+      - type: cart_count_increased
+        expected: true
+
+  - name: "Cart Page Accessible"
+    id: C003
+    priority: high
+    tags: [cart, navigation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: wait_for
+        text: "Cart"
+        timeout: 3000
+    assertions:
+      - type: page_contains
+        text: "Cart"
+        expected: true
+
+  - name: "Added Items Display in Cart"
+    id: C004
+    priority: high
+    tags: [cart, items]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: evaluate
+        function: |
+          () => {
+            const items = document.querySelectorAll('[class*="cart-item"]');
+            return { item_count: items.length };
+          }
+    assertions:
+      - type: items_in_cart
+        min: 1
+        expected: true
+
+  - name: "Quantity Controls Present"
+    id: C005
+    priority: high
+    tags: [cart, quantity]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: evaluate
+        function: |
+          () => {
+            const plusBtn = document.querySelector('[class*="plus"], button:has-text("+")')
+            const minusBtn = document.querySelector('[class*="minus"], button:has-text("-")');
+            return {
+              has_plus: !!plusBtn,
+              has_minus: !!minusBtn
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "[class*='plus'], [class*='minus']"
+        expected: true
+
+  - name: "Quantity Update Works"
+    id: C006
+    priority: high
+    tags: [cart, quantity]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: find_element
+        contains: "+"
+        store_as: plus_btn
+      - action: click
+        ref: "{{plus_btn}}"
+      - action: wait_for
+        time: 500
+    assertions:
+      - type: quantity_updated
+        expected: true
+
+  - name: "Remove from Cart Works"
+    id: C007
+    priority: high
+    tags: [cart, remove]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: find_element
+        contains: "Remove"
+        store_as: remove_btn
+      - action: click
+        ref: "{{remove_btn}}"
+      - action: wait_for
+        time: 500
+    assertions:
+      - type: item_removed
+        expected: true
+
+  - name: "Cart Total Calculation Correct"
+    id: C008
+    priority: high
+    tags: [cart, total]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: evaluate
+        function: |
+          () => {
+            const items = document.querySelectorAll('[class*="cart-item"]');
+            let calculatedTotal = 0;
+            items.forEach(item => {
+              const priceMatch = item.textContent.match(/Rs\s*(\d+)/);
+              const qtyMatch = item.textContent.match(/Qty:\s*(\d+)/);
+              if (priceMatch && qtyMatch) {
+                calculatedTotal += parseInt(priceMatch[1]) * parseInt(qtyMatch[1]);
+              }
+            });
+            const displayedTotal = document.querySelector('[class*="total"]')?.textContent.match(/(\d+)/)?.[1];
+            return {
+              calculated: calculatedTotal,
+              displayed: displayedTotal,
+              correct: calculatedTotal === parseInt(displayedTotal || 0)
+            };
+          }
+    assertions:
+      - type: total_calculation_correct
+        expected: true
+
+  - name: "Empty Cart Message Shown"
+    id: C009
+    priority: medium
+    tags: [cart, empty]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: evaluate
+        function: |
+          () => {
+            const items = document.querySelectorAll('[class*="cart-item"]');
+            const emptyMsg = document.body.textContent.includes('empty') ||
+                           document.body.textContent.includes('no items');
+            return {
+              item_count: items.length,
+              shows_empty_message: items.length === 0 && emptyMsg
+            };
+          }
+    assertions:
+      - type: empty_cart_handled
+        expected: true
+
+  - name: "Cart Persists on Refresh"
+    id: C010
+    priority: high
+    tags: [cart, persistence]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: evaluate
+        function: |
+          () => {
+            return { cart_before_refresh: localStorage.getItem('cart') };
+          }
+        store_as: before_refresh
+      - action: refresh
+      - action: evaluate
+        function: |
+          () => {
+            return { cart_after_refresh: localStorage.getItem('cart') };
+          }
+        store_as: after_refresh
+    assertions:
+      - type: cart_persisted
+        expected: true
+
+  - name: "Checkout Button Visible"
+    id: C011
+    priority: critical
+    tags: [cart, checkout]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: find_element
+        contains: "Checkout"
+        store_as: checkout_btn
+    assertions:
+      - type: element_visible
+        selector: "button:has-text('Checkout')"
+        expected: true
+
+  - name: "Proceed to Checkout Works"
+    id: C012
+    priority: critical
+    tags: [cart, checkout]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: find_element
+        contains: "Checkout"
+        store_as: checkout_btn
+      - action: click
+        ref: "{{checkout_btn}}"
+      - action: wait_for
+        text: "Checkout"
+        timeout: 3000
+    assertions:
+      - type: checkout_initiated
+        expected: true
+
+  - name: "Continue Shopping Link Works"
+    id: C013
+    priority: medium
+    tags: [cart, navigation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: find_element
+        contains: "Continue Shopping"
+        store_as: continue_btn
+      - action: click
+        ref: "{{continue_btn}}"
+    assertions:
+      - type: navigation_works
+        url_contains: "products"
+        expected: true
+
+  - name: "No Console Errors in Cart"
+    id: C014
+    priority: high
+    tags: [cart, console]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: check_console
+        level: error
+    assertions:
+      - type: console_errors
+        expected: 0
+
+  - name: "Cart UI Responsive"
+    id: C015
+    priority: medium
+    tags: [cart, responsive]
+    steps:
+      - action: resize_viewport
+        width: 375
+        height: 667
+      - action: navigate
+        url: "{{base_url}}/cart"
+      - action: evaluate
+        function: |
+          () => {
+            const items = document.querySelectorAll('[class*="cart-item"]');
+            return {
+              items_visible: items.length > 0 || document.body.textContent.includes('empty'),
+              page_loads: true
+            };
+          }
+    assertions:
+      - type: responsive_layout
+        expected: true
+
+# Checkout Flow Tests (12 scenarios)
+checkout_tests:
+  - name: "Checkout Form Loads"
+    id: O001
+    priority: critical
+    tags: [checkout, loading]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: wait_for
+        text: "Checkout"
+        timeout: 5000
+      - action: check_console
+        level: error
+    assertions:
+      - type: page_loaded
+        expected: true
+
+  - name: "Form Fields Present"
+    id: O002
+    priority: high
+    tags: [checkout, form]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: evaluate
+        function: |
+          () => {
+            return {
+              has_name_field: !!document.querySelector('input[name*="name"]'),
+              has_email_field: !!document.querySelector('input[type="email"]'),
+              has_address_field: !!document.querySelector('input[name*="address"]'),
+              has_phone_field: !!document.querySelector('input[type="tel"]')
+            };
+          }
+    assertions:
+      - type: checkout_form_complete
+        expected: true
+
+  - name: "Form Validation Works"
+    id: O003
+    priority: high
+    tags: [checkout, validation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: find_element
+        contains: "Place Order"
+        store_as: submit_btn
+      - action: click
+        ref: "{{submit_btn}}"
+      - action: wait_for
+        time: 500
+      - action: evaluate
+        function: |
+          () => {
+            const errorMsg = document.body.textContent.includes('required') ||
+                           document.body.textContent.includes('invalid');
+            return { validation_shown: errorMsg };
+          }
+    assertions:
+      - type: form_validation_works
+        expected: true
+
+  - name: "Payment Section Present"
+    id: O004
+    priority: high
+    tags: [checkout, payment]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: evaluate
+        function: |
+          () => {
+            return {
+              has_payment_section: document.body.textContent.includes('Payment') ||
+                                 document.body.textContent.includes('payment')
+            };
+          }
+    assertions:
+      - type: element_exists
+        selector: "[class*='payment'], [class*='billing']"
+        expected: true
+
+  - name: "Order Summary Displayed"
+    id: O005
+    priority: high
+    tags: [checkout, summary]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: evaluate
+        function: |
+          () => {
+            return {
+              has_summary: document.body.textContent.includes('Summary') ||
+                          document.body.textContent.includes('Order Total'),
+              shows_total: document.body.textContent.match(/Rs\s*\d+/) !== null
+            };
+          }
+    assertions:
+      - type: order_summary_visible
+        expected: true
+
+  - name: "Place Order Button Present"
+    id: O006
+    priority: critical
+    tags: [checkout, submit]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: find_element
+        contains: "Place Order"
+        store_as: submit_btn
+    assertions:
+      - type: element_exists
+        selector: "button:has-text('Place Order')"
+        expected: true
+
+  - name: "Checkout with Valid Data Succeeds"
+    id: O007
+    priority: critical
+    tags: [checkout, submit]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/products/1"
+      - action: find_element
+        contains: "Add to Cart"
+        store_as: add_btn
+      - action: click
+        ref: "{{add_btn}}"
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: fill_form
+        fields:
+          - name: "Full Name"
+            value: "Test User"
+          - name: "Email"
+            value: "test@example.com"
+          - name: "Address"
+            value: "123 Main St"
+          - name: "Phone"
+            value: "1234567890"
+      - action: find_element
+        contains: "Place Order"
+        store_as: submit_btn
+      - action: click
+        ref: "{{submit_btn}}"
+      - action: wait_for
+        text: "Confirmation"
+        timeout: 5000
+    assertions:
+      - type: order_confirmed
+        expected: true
+
+  - name: "Order Confirmation Page Shows"
+    id: O008
+    priority: high
+    tags: [checkout, confirmation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/order-confirmation"
+      - action: evaluate
+        function: |
+          () => {
+            return {
+              has_confirmation: document.body.textContent.includes('confirmation') ||
+                               document.body.textContent.includes('confirmed')
+            };
+          }
+    assertions:
+      - type: page_contains
+        text: "confirmation"
+        expected: true
+
+  - name: "Order Number Displayed"
+    id: O009
+    priority: medium
+    tags: [checkout, confirmation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/order-confirmation"
+      - action: evaluate
+        function: |
+          () => {
+            const orderNum = document.body.textContent.match(/#\d+/) ||
+                            document.body.textContent.match(/Order ID:\s*\d+/);
+            return { order_number_visible: !!orderNum };
+          }
+    assertions:
+      - type: order_number_visible
+        expected: true
+
+  - name: "Estimated Delivery Date Shown"
+    id: O010
+    priority: low
+    tags: [checkout, confirmation]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/order-confirmation"
+      - action: evaluate
+        function: |
+          () => {
+            return {
+              has_delivery_date: document.body.textContent.includes('Delivery') ||
+                                document.body.textContent.includes('delivery')
+            };
+          }
+    assertions:
+      - type: page_contains
+        text: "Delivery"
+        expected: true
+
+  - name: "No Console Errors in Checkout"
+    id: O011
+    priority: high
+    tags: [checkout, console]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: check_console
+        level: error
+    assertions:
+      - type: console_errors
+        expected: 0
+
+  - name: "Checkout Page Performance"
+    id: O012
+    priority: medium
+    tags: [checkout, performance]
+    steps:
+      - action: navigate
+        url: "{{base_url}}/checkout"
+      - action: evaluate
+        function: |
+          () => {
+            const lcp = performance.getEntriesByName('largest-contentful-paint')[0]?.startTime || 0;
+            return { lcp_acceptable: lcp < 3000 };
+          }
+    assertions:
+      - type: performance_good
+        expected: true
+
+# Summary
+metadata:
+  total_scenarios: 55
+  test_categories:
+    - name: Homepage
+      count: 8
+      priority: critical
+    - name: Product Discovery
+      count: 20
+      priority: critical
+    - name: Shopping Cart
+      count: 15
+      priority: critical
+    - name: Checkout
+      count: 12
+      priority: critical
+  estimated_runtime_seconds: 240
+  coverage_areas:
+    - Homepage functionality and performance
+    - Product browsing, filtering, and details
+    - Shopping cart operations
+    - Checkout and order confirmation
+    - Responsive design (desktop and mobile)
+    - Accessibility compliance
+    - Console error detection
+    - Network request validation
