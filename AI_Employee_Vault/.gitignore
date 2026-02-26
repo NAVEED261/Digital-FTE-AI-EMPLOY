@@ -1,0 +1,56 @@
+# Environment and Credentials
+.env
+.env.local
+.env.*.local
+credentials.json
+token.json
+*.pem
+*.key
+secrets.json
+
+# Sessions and Tokens
+.sessions/
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Temporary Files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Process Management
+ecosystem.config.js
+*.pid
+
+# Large Files (optional - uncomment if needed)
+# *.mp4
+# *.zip
+# *.tar.gz
+
+# Specific to this vault
+Logs/*.log
+.watchers/*.log
+.sessions/
+
+# Never commit these
+/Inbox/*
+/Pending_Approval/*
+/Rejected/*
+
+# Except keep structure
+!Inbox/.gitkeep
+!Pending_Approval/.gitkeep
+!Rejected/.gitkeep

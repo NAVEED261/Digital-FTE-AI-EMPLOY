@@ -1,0 +1,39 @@
+---
+type: file_drop
+original_name: test_document.txt
+file_path: Needs_Action/test_document.txt
+size_bytes: 51
+file_type: .txt
+received: 2026-02-16T19:53:17.831201
+priority: medium
+status: pending
+processed_by: filesystem_watcher
+---
+
+# File Dropped: test_document.txt
+
+A new file was added to your Inbox and is ready for processing.
+
+## File Details
+- **Size:** 51 bytes
+- **Type:** .txt
+- **Received:** 2026-02-16T19:53:17.831201
+
+## Preview
+```
+This is a test document for the AI Employee vault.
+
+```
+
+## Suggested Claude Actions
+- [ ] Review file contents
+- [ ] Categorize file (document, data, resource, etc.)
+- [ ] Determine urgency (low/medium/high)
+- [ ] Create processing plan if needed
+- [ ] Move to appropriate folder (/Done, /Pending_Approval, etc.)
+
+## File Location
+`Needs_Action/test_document.txt`
+
+## Next Step
+Claude Code should read this file, decide on processing steps, and update this metadata with decisions.
