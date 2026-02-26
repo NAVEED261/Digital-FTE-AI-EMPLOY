@@ -1,0 +1,133 @@
+==============================================================================
+                   SILVER TIER QUICK REFERENCE CARD
+                  Aap ke liye Testing Commands - Copy & Paste
+==============================================================================
+
+1. QUICK AUTOMATED TEST (2 minutes)
+──────────────────────────────────────────────────────────────────────────
+bash /mnt/d/Hackaton-0/DEGITAL-FTE-EMPLOY/Tier_2_Silver/QUICK_TEST_COMMANDS.sh
+
+Output: Color-coded status of 10 components (OK or FAIL)
+
+2. CHECK ENVIRONMENT
+──────────────────────────────────────────────────────────────────────────
+python3 --version
+python3 -c "import playwright; print('OK: Playwright')"
+python3 -c "import google.auth; print('OK: Google Auth')"
+
+Expected: All three show OK
+
+3. GMAIL FTE - SEND TEST EMAIL
+──────────────────────────────────────────────────────────────────────────
+cd /mnt/d/Hackaton-0/DEGITAL-FTE-EMPLOY/Tier_2_Silver/src/watchers
+
+python3 << 'PYEOF'
+from email_sender import EmailSender
+sender = EmailSender()
+result = sender.send(
+    to='hafiznaveedchuhan@gmail.com',
+    subject='Silver Tier Test - Manual Verification',
+    body='Testing Silver Tier Gmail FTE'
+)
+if result['success']:
+    print(f"EMAIL SENT! Message ID: {result['message_id']}")
+else:
+    print(f"FAILED: {result['error']}")
+PYEOF
+
+Expected: EMAIL SENT! Message ID: <timestamp>
+
+4. WHATSAPP FTE - CHECK BACKUP FILES
+──────────────────────────────────────────────────────────────────────────
+ls -lah /mnt/d/Hackaton-0/AI_Employee_Vault/Inbox/WA_BACKUP_*
+cat /mnt/d/Hackaton-0/AI_Employee_Vault/Inbox/WA_BACKUP_Self_*.md
+
+Expected: YAML frontmatter + message content
+
+5. VAULT STRUCTURE - CHECK ALL FOLDERS
+──────────────────────────────────────────────────────────────────────────
+for folder in Inbox Needs_Action Pending_Approval Approved Done Rejected Archive Logs Plans; do
+    [ -d "/mnt/d/Hackaton-0/AI_Employee_Vault/$folder" ] && echo "OK: $folder"
+done
+
+Expected: All 9 folders show OK
+
+6. VAULT FILE COUNTS
+──────────────────────────────────────────────────────────────────────────
+VAULT="/mnt/d/Hackaton-0/AI_Employee_Vault"
+echo "Inbox: $(ls -1 $VAULT/Inbox | wc -l)"
+echo "Needs_Action: $(ls -1 $VAULT/Needs_Action | wc -l)"
+echo "Done: $(ls -1 $VAULT/Done | wc -l)"
+echo "Logs: $(ls -1 $VAULT/Logs | wc -l)"
+
+Expected: Inbox=4+, Needs_Action=2+, Done=1+, Logs=14+
+
+7. DASHBOARD - CHECK IF RUNNING
+──────────────────────────────────────────────────────────────────────────
+curl -s http://localhost:8080 | head -1
+
+Expected: HTML output (<!DOCTYPE html)
+
+Visit browser: http://localhost:8080
+
+Expected: Dashboard visible with status cards
+
+8. EMAIL LOGS - LATEST ENTRIES
+──────────────────────────────────────────────────────────────────────────
+tail -5 /mnt/d/Hackaton-0/AI_Employee_Vault/Logs/email_sender.log
+
+Expected: EMAIL SENT entries with timestamps
+
+9. COMPLETE E2E WORKFLOW TEST
+──────────────────────────────────────────────────────────────────────────
+# Create test email
+cat > /mnt/d/Hackaton-0/AI_Employee_Vault/Inbox/E2E_$(date +%s).md << 'EOF'
+---
+type: test
+---
+E2E Test
+EOF
+
+# Move to Needs_Action
+file=$(ls /mnt/d/Hackaton-0/AI_Employee_Vault/Inbox/E2E_*.md | head -1)
+mv "$file" /mnt/d/Hackaton-0/AI_Employee_Vault/Needs_Action/
+
+# Create and move approval
+cat > /mnt/d/Hackaton-0/AI_Employee_Vault/Pending_Approval/E2E_APPR_$(date +%s).md << 'EOF'
+---
+type: approval
+---
+- [ ] APPROVE
+EOF
+
+file=$(ls /mnt/d/Hackaton-0/AI_Employee_Vault/Pending_Approval/E2E_APPR_*.md | head -1)
+mv "$file" /mnt/d/Hackaton-0/AI_Employee_Vault/Approved/
+
+# Move to Done
+file=$(ls /mnt/d/Hackaton-0/AI_Employee_Vault/Approved/E2E_APPR_*.md | head -1)
+mv "$file" /mnt/d/Hackaton-0/AI_Employee_Vault/Done/
+
+echo "OK: E2E WORKFLOW COMPLETE"
+
+Expected: File traverses all folders successfully
+
+==============================================================================
+                            SUCCESS CHECKLIST
+==============================================================================
+
+After running all tests:
+
+  [ ] Python 3.12+ confirmed
+  [ ] Playwright installed
+  [ ] Google Auth installed  
+  [ ] Email sent successfully
+  [ ] WhatsApp backup files exist
+  [ ] HITL approval workflow works
+  [ ] All 9 vault folders present
+  [ ] Dashboard loads
+  [ ] Email logs show entries
+  [ ] E2E workflow complete
+
+If all checked: Silver Tier is 100% WORKING!
+
+==============================================================================
