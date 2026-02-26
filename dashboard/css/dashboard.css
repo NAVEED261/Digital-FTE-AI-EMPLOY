@@ -1,0 +1,137 @@
+/* Digital FTE Dashboard - Custom Styling */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* Smooth transitions */
+button {
+    transition: all 0.3s ease;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
+
+/* Card hover effects */
+.bg-gray-800 {
+    transition: all 0.3s ease;
+}
+
+.bg-gray-800:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Pulsing animation for active watchers */
+@keyframes pulse-success {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.animate-pulse-success {
+    animation: pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Activity timeline styling */
+#activity-timeline {
+    scrollbar-width: thin;
+    scrollbar-color: #4a5568 #1a1a2e;
+}
+
+/* Chart responsive sizing */
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Status indicator badges */
+.status-online {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #48bb78;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse-success 2s infinite;
+}
+
+.status-offline {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #f56565;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.status-pending {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #ecc94b;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Accessibility - Focus states */
+button:focus {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+}
+
+/* Dark mode optimizations */
+@supports (color: rgba(0, 0, 0, 0)) {
+    body {
+        color-scheme: dark;
+    }
+}
