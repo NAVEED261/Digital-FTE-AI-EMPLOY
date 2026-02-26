@@ -1,12 +1,12 @@
-# Environment Variables
+# Environment Variables & Secrets
 .env
 .env.local
 .env.*.local
 credentials.json
-token.json
+oauth_tokens/
 *.pem
 *.key
-secrets.json
+.aws/
 
 # Python
 __pycache__/
@@ -14,6 +14,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
+env/
+venv/
+ENV/
 build/
 develop-eggs/
 dist/
@@ -29,51 +32,46 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Testing
 .pytest_cache/
 .coverage
-htmlcov/
+coverage.xml
 .tox/
-.venv
-venv/
-ENV/
-
-# Node.js
-node_modules/
-npm-debug.log
-yarn-error.log
-package-lock.json
+.hypothesis/
 
 # IDE
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
 *.swp
 *.swo
 *~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Vault & Local Storage
+/AI_Employee_Vault/Logs/*
+!/AI_Employee_Vault/Logs/.gitkeep
+/AI_Employee_Vault/Archive/*
+!/AI_Employee_Vault/Archive/.gitkeep
+
+# PM2
+pm2.json
+pm2-pm2.json
 
 # OS
 .DS_Store
 Thumbs.db
-.AppleDouble
-.LSOverride
 
-# Sessions and temporary
-.sessions/
-.cache/
+# Temporary Files
 *.tmp
 *.temp
-*.pid
+*.swp
 
-# Process Management
-ecosystem.config.js
-
-# Vault-specific (local working files)
-AI_Employee_Vault/Logs/*.log
-AI_Employee_Vault/.sessions/
-AI_Employee_Vault/Inbox/*
-!AI_Employee_Vault/Inbox/.gitkeep
-AI_Employee_Vault/Pending_Approval/*
-!AI_Employee_Vault/Pending_Approval/.gitkeep
-AI_Employee_Vault/Rejected/*
-!AI_Employee_Vault/Rejected/.gitkeep
+# Node (for MCP servers)
+node_modules/
+npm-debug.log
+yarn-error.log
